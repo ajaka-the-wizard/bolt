@@ -18,7 +18,7 @@ func LoadEnv(logger *slog.Logger) *Env {
 		panic("Env file not found")
 	}
 	envs := Env{
-		PORT: os.Getenv("port"),
+		PORT: os.Getenv("PORT"),
 	}
 	return &envs
 }
