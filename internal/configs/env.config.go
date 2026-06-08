@@ -2,23 +2,32 @@ package configs
 
 import (
 	"log/slog"
-	"os"
 
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
 type Env struct {
-	PORT string
+	PORT           string
+	DATABASE_URL   string
+	REDIS_ADDR     string
+	REDIS_PASSWORD string
+	SHARED_SECRET  string
 }
 
 func LoadEnv(logger *slog.Logger) *Env {
-	err := godotenv.Load()
-	if err != nil {
-		logger.Error("environment file not found", "error", err.Error())
-		panic("Env file not found")
+	v := viper.New()
+	v.SetConfigFile(".env")
+
+	if err := v.ReadInConfig(); err != nil {
+		logger.Error("Couldn't read env file", "error", err)
+		panic(err)
 	}
-	envs := Env{
-		PORT: os.Getenv("PORT"),
+
+	var env Env
+	if err := v.UnmarshalExact(&env); err != nil {
+		logger.Error("Failed to map env config", "error", err)
+		panic(err)
 	}
-	return &envs
+	logger.Info("Env loaded successfully")
+	return &env
 }
