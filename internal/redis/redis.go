@@ -28,6 +28,10 @@ func InitRedis(ctx context.Context, env *configs.Env, logger *slog.Logger) *Redi
 		rdb.Close()
 		panic(err)
 	}
+	// err = rdb.FlushAll(ctx).Err()
+	// if err != nil {
+	// 	panic(err)
+	// }
 	logger.Info("Redis cache connected successfully")
 
 	return &Redis{

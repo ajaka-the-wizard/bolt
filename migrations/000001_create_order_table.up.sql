@@ -1,21 +1,19 @@
+CREATE TYPE status_enum AS ENUM ('pending','completed','failed','started');
+
 CREATE TABLE IF NOT EXISTS orders (
     id               UUID PRIMARY KEY DEFAULT uuidv7(),
     order_number     VARCHAR(50) UNIQUE NOT NULL,
-
     customer_name    VARCHAR(150) NOT NULL,
     customer_email   VARCHAR(150) NOT NULL,
-
     shipping_address JSONB NOT NULL,
     items            JSONB NOT NULL,
-
-    sub_total         DECIMAL(12,2) NOT NULL DEFAULT 0,
+    sub_total        DECIMAL(12,2) NOT NULL DEFAULT 0,
     shipping_cost    DECIMAL(12,2) NOT NULL DEFAULT 0,
     tax              DECIMAL(12,2) NOT NULL DEFAULT 0,
     discount         DECIMAL(12,2) NOT NULL DEFAULT 0,
     total            DECIMAL(12,2) NOT NULL DEFAULT 0,
-
+    status           status_enum NOT NULL DEFAULT 'pending',
     payment_method   VARCHAR(50) NOT NULL,
-
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
