@@ -43,8 +43,8 @@ func (r *Redis) CloseConn() error {
 
 func (r *Redis) SetIdemKey(ctx context.Context, key string) error {
 	iKey := "bolt:idempotency:" + key
-	exp := time.Minute * 24
-	err := r.rdb.Set(ctx, iKey, key, exp).Err()
+	exp := time.Hour * 24
+	err := r.rdb.SetNX(ctx, iKey, key, exp).Err()
 	return err
 }
 

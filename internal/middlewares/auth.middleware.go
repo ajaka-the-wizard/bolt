@@ -28,8 +28,12 @@ func IdempotencyMiddleware(s *store.Store) fiber.Handler {
 		if idempotencyKey == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"success": false, "message": "No idempotency key provided"})
 		}
+		c.Locals("iKey", idempotencyKey)
 		if s.CheckKeyExistence(c.RequestCtx(), idempotencyKey) {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"success": false, "message": "Duplicate request detected"})
+		}
+		if err := s.SetIdempotencyKey(c.RequestCtx(), idempotencyKey); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "message": "Something went wrong"})
 		}
 		return c.Next()
 	}
