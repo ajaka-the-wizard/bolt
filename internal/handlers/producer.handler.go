@@ -20,7 +20,10 @@ func ProducerHandler(r *database.Repo) fiber.Handler {
 			})
 		}
 
-		id, _ := r.SaveOrder(c.RequestCtx(), &order)
+		id, err := r.SaveOrder(c.RequestCtx(), &order)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "message": "Failed to persist order"})
+		}
 		return c.Status(http.StatusAccepted).JSON(fiber.Map{"success": true, "message": "Job received for processing", "id": id})
 	}
 }

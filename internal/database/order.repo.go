@@ -24,19 +24,3 @@ func (r *Repo) SaveOrder(ctx context.Context, data *models.Order) (uuid.UUID, er
 	}
 	return id, nil
 }
-
-// query := `
-//       INSERT INTO users (full_name,email,password)
-//       VALUES ($1, $2, $3)
-//       `
-//       _, err := r.pool.Exec(ctx, query, user.FullName, user.Email, user.Password)
-//       if err != nil {
-//               logger.Error("failed to create user", "email", user.Email, "error", err.Error())
-//               var pgErr *pgconn.PgError
-//               if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-//                       return errs.ErrDuplicateEmail
-//               }
-//               return err
-//       }
-//       logger.Info("user created successfully", "email", user.Email)
-//       return nil

@@ -24,7 +24,11 @@ func Listen() {
 	defer db.CloseConn()
 
 	rdb := redis.InitializeRedis(ctx, env, logger)
-	defer rdb.CloseConn()
+	defer func() {
+		if err := rdb.CloseConn(); err != nil {
+			logger.Error("Error closing redis connection", "error", err.Error())
+		}
+	}()
 
 	app := fiber.New()
 
@@ -57,6 +61,5 @@ func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *datab
 		if err := app.Shutdown(); err != nil {
 			logger.Error("Error during shutdown", "error", err.Error())
 		}
-		os.Exit(0)
 	}()
 }

@@ -25,6 +25,7 @@ func InitializeRedis(ctx context.Context, env *configs.Env, logger *slog.Logger)
 	err := rdb.Ping(ctx).Err()
 	if err != nil {
 		logger.Error("Could not ping redis", "error", err)
+		rdb.Close()
 		panic(err)
 	}
 	logger.Info("Redis cache connected successfully")
