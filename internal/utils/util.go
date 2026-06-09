@@ -12,3 +12,11 @@ func GetLogger(c fiber.Ctx) *slog.Logger {
 	}
 	return slog.Default()
 }
+
+func GetKey(c fiber.Ctx, key string) (string, bool) {
+	val, ok := c.Locals(key).(string)
+	if !ok || val == "" {
+		return "", false
+	}
+	return val, true
+}

@@ -5,13 +5,17 @@ import (
 
 	"github.com/ajaka-the-wizard/bolt/internal/models"
 	"github.com/ajaka-the-wizard/bolt/internal/store"
+	"github.com/ajaka-the-wizard/bolt/internal/utils"
 	"github.com/gofiber/fiber/v3"
 )
 
 func ProducerHandler(s *store.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		// logger := utils.GetLogger(c)
-		key := c.Locals("iKey").(string)
+		key, ok := utils.GetKey(c, "iKey")
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "message": "Something went wrong"})
+		}
 		var order models.Order
 		if err := c.Bind().Body(&order); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{

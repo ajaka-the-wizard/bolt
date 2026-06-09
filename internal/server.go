@@ -26,11 +26,6 @@ func Listen() {
 	defer db.CloseConn()
 
 	rdb := redis.InitRedis(ctx, env, logger)
-	defer func() {
-		if err := rdb.CloseConn(); err != nil {
-			logger.Error("Error closing redis connection", "error", err.Error())
-		}
-	}()
 	queue := queues.InitQueue()
 	store := store.InitStore(rdb, db, queue)
 	app := fiber.New()

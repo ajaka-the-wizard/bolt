@@ -12,11 +12,11 @@ func (s *Store) SaveOrder(ctx context.Context, data *models.Order, key string) (
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	if err := s.r.SetIdemKey(ctx, key); err != nil {
-		return uuid.UUID{}, err
-	}
 	id, err := s.db.SaveOrder(ctx, data)
 	if err != nil {
+		return uuid.UUID{}, err
+	}
+	if err := s.r.SetIdemKey(ctx, key); err != nil {
 		return uuid.UUID{}, err
 	}
 	s.q.AddToReportGenQueue(id)
