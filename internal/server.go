@@ -10,8 +10,10 @@ import (
 	"github.com/ajaka-the-wizard/bolt/internal/configs"
 	"github.com/ajaka-the-wizard/bolt/internal/database"
 	"github.com/ajaka-the-wizard/bolt/internal/middlewares"
+	"github.com/ajaka-the-wizard/bolt/internal/queues"
 	"github.com/ajaka-the-wizard/bolt/internal/redis"
 	"github.com/ajaka-the-wizard/bolt/internal/routes"
+	"github.com/ajaka-the-wizard/bolt/internal/store"
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -23,13 +25,14 @@ func Listen() {
 	db := database.ConnectDB(ctx, logger, env.DATABASE_URL)
 	defer db.CloseConn()
 
-	rdb := redis.InitializeRedis(ctx, env, logger)
+	rdb := redis.InitRedis(ctx, env, logger)
 	defer func() {
 		if err := rdb.CloseConn(); err != nil {
 			logger.Error("Error closing redis connection", "error", err.Error())
 		}
 	}()
-
+	queue := queues.InitQueue()
+	store := store.InitStore(rdb, db, queue)
 	app := fiber.New()
 
 	// Graceful shutdown
@@ -39,7 +42,7 @@ func Listen() {
 
 	api := app.Group("/api/v1", middlewares.GenerateUniqueId(), middlewares.LoggerMiddleware(), middlewares.LatencyCalculations(), middlewares.AuthMiddleware(env))
 
-	routes.Route(api, db)
+	routes.Route(api, store)
 
 	err := app.Listen(env.PORT)
 	if err != nil {
