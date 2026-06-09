@@ -20,7 +20,7 @@ func ProducerHandler(r *database.Repo) fiber.Handler {
 			})
 		}
 
-		id := r.SaveOrder(c.RequestCtx(), &order)
-		return c.Status(http.StatusAccepted).JSON(fiber.Map{"Success": true, "message": "Job received for processing", "id": id})
+		id, _ := r.SaveOrder(c.RequestCtx(), &order)
+		return c.Status(http.StatusAccepted).JSON(fiber.Map{"success": true, "message": "Job received for processing", "id": id})
 	}
 }

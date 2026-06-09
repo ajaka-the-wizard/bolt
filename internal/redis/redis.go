@@ -22,7 +22,7 @@ func InitializeRedis(ctx context.Context, env *configs.Env, logger *slog.Logger)
 		DB:       0,
 		Protocol: 2,
 	})
-	err := rdb.Set(ctx, "ping", "pong", 0).Err()
+	err := rdb.Ping(ctx).Err()
 	if err != nil {
 		logger.Error("Could not ping redis", "error", err)
 		panic(err)
@@ -32,4 +32,10 @@ func InitializeRedis(ctx context.Context, env *configs.Env, logger *slog.Logger)
 	return &Redis{
 		rdb,
 	}
+}
+func (r *Redis) CloseConn() error {
+	if r.rdb != nil {
+		return r.rdb.Close()
+	}
+	return nil
 }

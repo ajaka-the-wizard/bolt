@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS orders (
     shipping_address JSONB NOT NULL,
     items            JSONB NOT NULL,
 
-    subtotal         DECIMAL(12,2) NOT NULL DEFAULT 0,
+    sub_total         DECIMAL(12,2) NOT NULL DEFAULT 0,
     shipping_cost    DECIMAL(12,2) NOT NULL DEFAULT 0,
     tax              DECIMAL(12,2) NOT NULL DEFAULT 0,
     discount         DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -20,6 +20,5 @@ CREATE TABLE IF NOT EXISTS orders (
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_orders_order_number ON orders(order_number);
 CREATE INDEX idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX idx_orders_created_at ON orders(created_at);

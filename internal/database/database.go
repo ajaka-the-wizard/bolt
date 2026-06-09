@@ -33,6 +33,12 @@ func ConnectDB(ctx context.Context, logger *slog.Logger, databaseUrl string) *Re
 	}
 	logger.Info("successfully connected to PostgreSQL database")
 	return &Repo{
-		pool,
+		pool: pool,
+	}
+}
+
+func (r *Repo) CloseConn() {
+	if r.pool != nil {
+		r.pool.Close()
 	}
 }
