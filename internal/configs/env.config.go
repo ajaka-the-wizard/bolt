@@ -2,23 +2,38 @@ package configs
 
 import (
 	"log/slog"
-	"os"
 
-	"github.com/joho/godotenv"
+	"github.com/go-playground/validator/v10"
+	"github.com/spf13/viper"
 )
 
 type Env struct {
-	PORT string
+	PORT           string `mapstructure:"PORT" validate:"required"`
+	DATABASE_URL   string `mapstructure:"DATABASE_URL" validate:"required"`
+	REDIS_ADDR     string `mapstructure:"REDIS_ADDR" validate:"required"`
+	REDIS_PASSWORD string `mapstructure:"REDIS_PASSWORD"`
+	SHARED_SECRET  string `mapstructure:"SHARED_SECRET" validate:"required"`
 }
 
 func LoadEnv(logger *slog.Logger) *Env {
-	err := godotenv.Load()
-	if err != nil {
-		logger.Error("environment file not found", "error", err.Error())
-		panic("Env file not found")
+	v := viper.New()
+	v.AutomaticEnv()
+	v.SetConfigFile(".env")
+	v.SetConfigType("env")
+
+	if err := v.ReadInConfig(); err != nil {
+		logger.Error("Couldn't read env file, using system enviroments variables")
 	}
-	envs := Env{
-		PORT: os.Getenv("PORT"),
+
+	var env Env
+	if err := v.UnmarshalExact(&env); err != nil {
+		logger.Error("Failed to map env config", "error", err)
+		panic(err)
 	}
-	return &envs
+	validate := validator.New()
+	if err := validate.Struct(&env); err != nil {
+		logger.Error("Missing env fields. ", "error", err.Error())
+	}
+	logger.Info("Env loaded successfully")
+	return &env
 }
