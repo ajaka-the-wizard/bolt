@@ -33,6 +33,7 @@ func LoadEnv(logger *slog.Logger) *Env {
 	validate := validator.New()
 	if err := validate.Struct(&env); err != nil {
 		logger.Error("Missing env fields. ", "error", err.Error())
+		panic(err)
 	}
 	logger.Info("Env loaded successfully")
 	return &env
