@@ -3,14 +3,15 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/ajaka-the-wizard/bolt/internal/database"
 	"github.com/ajaka-the-wizard/bolt/internal/models"
+	"github.com/ajaka-the-wizard/bolt/internal/store"
 	"github.com/gofiber/fiber/v3"
 )
 
-func ProducerHandler(r *database.Repo) fiber.Handler {
+func ProducerHandler(s *store.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		// logger := utils.GetLogger(c)
+		key := c.Locals("iKey").(string)
 		var order models.Order
 		if err := c.Bind().Body(&order); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -19,8 +20,7 @@ func ProducerHandler(r *database.Repo) fiber.Handler {
 				"error":   err.Error(),
 			})
 		}
-
-		id, err := r.SaveOrder(c.RequestCtx(), &order)
+		id, err := s.SaveOrder(c.RequestCtx(), &order, key)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "message": "Failed to persist order"})
 		}

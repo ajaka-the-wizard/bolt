@@ -13,7 +13,7 @@ type Redis struct {
 	rdb *redis.Client
 }
 
-func InitializeRedis(ctx context.Context, env *configs.Env, logger *slog.Logger) *Redis {
+func InitRedis(ctx context.Context, env *configs.Env, logger *slog.Logger) *Redis {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	rdb := redis.NewClient(&redis.Options{
@@ -39,4 +39,20 @@ func (r *Redis) CloseConn() error {
 		return r.rdb.Close()
 	}
 	return nil
+}
+
+func (r *Redis) SetIdemKey(ctx context.Context, key string) error {
+	iKey := "bolt:idempotency:" + key
+	exp := time.Minute * 24
+	err := r.rdb.Set(ctx, iKey, key, exp).Err()
+	return err
+}
+
+func (r *Redis) GetIdemKey(ctx context.Context, key string) (int, error) {
+	iKey := "bolt:idempotency:" + key
+	val, err := r.rdb.Exists(ctx, iKey).Result()
+	if err != nil {
+		return 0, err
+	}
+	return int(val), nil
 }
