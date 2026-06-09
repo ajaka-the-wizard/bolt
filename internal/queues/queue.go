@@ -9,6 +9,5 @@ func InitQueue() *Queue {
 }
 
 func (q *Queue) AddToReportGenQueue(id uuid.UUID) {
-	// Placeholder for queue
-	panic("Todo")
+	// TODO Placeholder for queue
 }

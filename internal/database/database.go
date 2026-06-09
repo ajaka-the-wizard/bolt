@@ -31,7 +31,7 @@ func ConnectDB(ctx context.Context, logger *slog.Logger, databaseUrl string) *Re
 		logger.Error("unable to ping database", "error", err.Error())
 		panic(err)
 	}
-	logger.Info("successfully connected to PostgreSQL database")
+	logger.Info("PostgreSQL connected successfully")
 	return &Repo{
 		pool: pool,
 	}
