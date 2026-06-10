@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ajaka-the-wizard/bolt/internal/configs"
+	"github.com/ajaka-the-wizard/bolt/internal/domain"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -46,14 +47,14 @@ func (r *Redis) CloseConn() error {
 }
 
 func (r *Redis) SetIdemKey(ctx context.Context, key string) error {
-	iKey := "bolt:idempotency:" + key
+	iKey := domain.BoltIdempotencyKey + key
 	exp := time.Hour * 24
 	err := r.rdb.SetNX(ctx, iKey, key, exp).Err()
 	return err
 }
 
 func (r *Redis) GetIdemKey(ctx context.Context, key string) (int, error) {
-	iKey := "bolt:idempotency:" + key
+	iKey := domain.BoltIdempotencyKey + key
 	val, err := r.rdb.Exists(ctx, iKey).Result()
 	if err != nil {
 		return 0, err

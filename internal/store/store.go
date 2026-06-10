@@ -5,18 +5,16 @@ import (
 	"time"
 
 	"github.com/ajaka-the-wizard/bolt/internal/database"
-	"github.com/ajaka-the-wizard/bolt/internal/queues"
 	"github.com/ajaka-the-wizard/bolt/internal/redis"
 )
 
 type Store struct {
 	r  *redis.Redis
 	db *database.Repo
-	q  *queues.Queue
 }
 
-func InitStore(r *redis.Redis, db *database.Repo, q *queues.Queue) *Store {
-	return &Store{r, db, q}
+func InitStore(r *redis.Redis, db *database.Repo) *Store {
+	return &Store{r, db}
 }
 
 func (s *Store) SetIdempotencyKey(ctx context.Context, key string) error {
