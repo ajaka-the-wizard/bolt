@@ -29,16 +29,23 @@ func InitRedis(ctx context.Context, env *configs.Env, logger *slog.Logger) *Redi
 		rdb.Close()
 		panic(err)
 	}
-	// err = rdb.FlushAll(ctx).Err()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	err = rdb.FlushAll(ctx).Err()
+	if err != nil {
+		panic(err)
+	}
 	logger.Info("Redis cache connected successfully")
 
+	if err := rdb.XGroupCreateMkStream(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, "$").Err(); err != nil {
+		logger.Error("Failed to create stream with consumer groups", "error", err.Error())
+		panic(err)
+	}
+
+	logger.Info("Consumer stream created successfully")
 	return &Redis{
 		rdb,
 	}
 }
+
 func (r *Redis) CloseConn() error {
 	if r.rdb != nil {
 		return r.rdb.Close()

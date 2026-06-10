@@ -19,6 +19,6 @@ func (s *Store) SaveOrder(ctx context.Context, data *models.Order, key string) (
 	if err := s.r.SetIdemKey(ctx, key); err != nil {
 		return uuid.UUID{}, err
 	}
-	s.r.AddToReportGenQueue(ctx, id)
+	s.r.AddToInvoiceQueue(ctx, id)
 	return id, nil
 }
