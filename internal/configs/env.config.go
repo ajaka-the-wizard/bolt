@@ -13,6 +13,7 @@ type Env struct {
 	REDIS_ADDR     string `mapstructure:"REDIS_ADDR" validate:"required"`
 	REDIS_PASSWORD string `mapstructure:"REDIS_PASSWORD"`
 	SHARED_SECRET  string `mapstructure:"SHARED_SECRET" validate:"required"`
+	PRODUCTION     bool   `mapstructure:"PRODUCTION"`
 }
 
 func LoadEnv(logger *slog.Logger) *Env {
@@ -26,7 +27,7 @@ func LoadEnv(logger *slog.Logger) *Env {
 	}
 
 	var env Env
-	if err := v.UnmarshalExact(&env); err != nil {
+	if err := v.Unmarshal(&env); err != nil {
 		logger.Error("Failed to map env config", "error", err)
 		panic(err)
 	}

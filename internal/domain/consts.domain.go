@@ -1,6 +1,7 @@
 package domain
 
 const (
+	BoltRedisMaxRetries           = 5
 	BoltIdempotencyKey            = "bolt:idempotency:"
 	BoltRedisInvoiceStreamKey     = "bolt:queue:invoice:"
 	BoltRedisWebhookStreamKey     = "bolt:queue:webhook:"
