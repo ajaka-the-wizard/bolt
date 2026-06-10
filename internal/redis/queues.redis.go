@@ -9,7 +9,7 @@ import (
 )
 
 func (r *Redis) AddToInvoiceQueue(ctx context.Context, id uuid.UUID) error {
-	arg := redis.XAddArgs{Stream: domain.BoltRedisInvoiceStreamKey, ID: "*", Values: map[string]any{"order_id": id.String(), "max_retries": 5, "no_of_retries": 0}, IdempotentID: id.String()}
+	arg := redis.XAddArgs{Stream: domain.BoltRedisInvoiceStreamKey, ID: "*", Values: map[string]any{"order_id": id.String(), "max_retries": domain.BoltRedisMaxRetries, "no_of_retries": 0}, IdempotentID: id.String()}
 	return r.rdb.XAdd(ctx, &arg).Err()
 }
 func (r *Redis) GetNextOnQueue(ctx context.Context, id string, stream string, group string) ([]redis.XStream, error) {

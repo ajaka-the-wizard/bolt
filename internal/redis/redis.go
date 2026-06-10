@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/ajaka-the-wizard/bolt/internal/configs"
@@ -29,13 +30,15 @@ func InitRedis(ctx context.Context, env *configs.Env, logger *slog.Logger) *Redi
 		rdb.Close()
 		panic(err)
 	}
-	err = rdb.FlushAll(ctx).Err()
-	if err != nil {
-		panic(err)
+	if !env.PRODUCTION {
+		err = rdb.FlushAll(ctx).Err()
+		if err != nil {
+			panic(err)
+		}
 	}
 	logger.Info("Redis cache connected successfully")
 
-	if err := rdb.XGroupCreateMkStream(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, "$").Err(); err != nil {
+	if err := rdb.XGroupCreateMkStream(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, "$").Err(); err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
 		logger.Error("Failed to create stream with consumer groups", "error", err.Error())
 		panic(err)
 	}

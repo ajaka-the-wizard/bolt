@@ -13,6 +13,7 @@ import (
 	"github.com/ajaka-the-wizard/bolt/internal/redis"
 	"github.com/ajaka-the-wizard/bolt/internal/routes"
 	"github.com/ajaka-the-wizard/bolt/internal/store"
+	"github.com/ajaka-the-wizard/bolt/internal/workers"
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -26,6 +27,9 @@ func Listen() {
 
 	rdb := redis.InitRedis(ctx, env, logger)
 	store := store.InitStore(rdb, db)
+
+	workers.InitInvoiceWorkers(ctx, store, logger)
+
 	app := fiber.New()
 
 	// Graceful shutdown
