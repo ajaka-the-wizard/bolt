@@ -10,7 +10,6 @@ import (
 	"github.com/ajaka-the-wizard/bolt/internal/configs"
 	"github.com/ajaka-the-wizard/bolt/internal/database"
 	"github.com/ajaka-the-wizard/bolt/internal/middlewares"
-	"github.com/ajaka-the-wizard/bolt/internal/queues"
 	"github.com/ajaka-the-wizard/bolt/internal/redis"
 	"github.com/ajaka-the-wizard/bolt/internal/routes"
 	"github.com/ajaka-the-wizard/bolt/internal/store"
@@ -26,8 +25,7 @@ func Listen() {
 	defer db.CloseConn()
 
 	rdb := redis.InitRedis(ctx, env, logger)
-	queue := queues.InitQueue()
-	store := store.InitStore(rdb, db, queue)
+	store := store.InitStore(rdb, db)
 	app := fiber.New()
 
 	// Graceful shutdown
