@@ -17,6 +17,8 @@ func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, id string) {
 	logger := slog.Default().With(slog.String("group", domain.BoltRedisInvoiceConsumerGroup), slog.String("id", id))
 	go func() {
 		t := time.NewTicker(time.Second * 2)
+		defer t.Stop()
+
 		for range t.C {
 			data, err := i.store.FetchNextTask(ctx, id, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, logger)
 			if err == ctx.Err() {

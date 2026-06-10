@@ -14,23 +14,21 @@ func (s *Store) FetchNextTask(ctx context.Context, id string, stream string, gro
 	backoff := time.Second
 	maxBackoff := 30 * time.Second
 	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(backoff):
-		}
 		data, err = s.r.GetNextOnQueue(ctx, id, stream, group)
 		if err != nil {
 			logger.Error("Failed to fetch next task", "error", err.Error())
-			time.Sleep(backoff)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(backoff):
+			}
 			backoff = backoff * 2
 			if backoff > maxBackoff {
 				backoff = maxBackoff
 			}
 			continue
-		} else {
-			break
 		}
+		break
 	}
 	return data, nil
 }

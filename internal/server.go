@@ -18,7 +18,9 @@ import (
 )
 
 func Listen() {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	logger := slog.Default()
 	env := configs.LoadEnv(logger)
 
@@ -35,7 +37,7 @@ func Listen() {
 	// Graceful shutdown
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	Shutdown(sig, logger, app, db, rdb)
+	Shutdown(sig, logger, app, db, rdb, cancel)
 
 	api := app.Group("/api/v1", middlewares.GenerateUniqueId(), middlewares.LoggerMiddleware(), middlewares.LatencyCalculations(), middlewares.AuthMiddleware(env))
 
@@ -48,9 +50,10 @@ func Listen() {
 	}
 }
 
-func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *database.Repo, rdb *redis.Redis) {
+func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *database.Repo, rdb *redis.Redis, cancel context.CancelFunc) {
 	go func() {
 		<-sig
+		cancel()
 		logger.Info("Closing redis connection")
 		if err := rdb.CloseConn(); err != nil {
 			logger.Error("Error closing redis connection", "error", err.Error())
