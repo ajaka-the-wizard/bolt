@@ -27,7 +27,7 @@ func LoadEnv(logger *slog.Logger) *Env {
 	}
 
 	var env Env
-	if err := v.Unmarshal(&env); err != nil {
+	if err := v.UnmarshalExact(&env); err != nil {
 		logger.Error("Failed to map env config", "error", err)
 		panic(err)
 	}
