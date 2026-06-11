@@ -50,7 +50,23 @@ func Listen() {
 	}
 }
 
-func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *database.Repo, rdb *redis.Redis, cancel context.CancelFunc) {
+// appShutdowner is the subset of *fiber.App used during graceful shutdown.
+type appShutdowner interface {
+	Shutdown() error
+}
+
+// redisConnCloser is the subset of *redis.Redis used during graceful shutdown.
+type redisConnCloser interface {
+	CloseConn() error
+}
+
+// dbConnCloser is the subset of *database.Repo used during graceful shutdown.
+type dbConnCloser interface {
+	CloseConn()
+}
+
+// doShutdown contains the testable core of Shutdown.
+func doShutdown(sig <-chan os.Signal, logger *slog.Logger, app appShutdowner, db dbConnCloser, rdb redisConnCloser, cancel context.CancelFunc) {
 	go func() {
 		<-sig
 		cancel()
@@ -65,4 +81,8 @@ func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *datab
 		logger.Info("Closing database connection")
 		db.CloseConn()
 	}()
+}
+
+func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *database.Repo, rdb *redis.Redis, cancel context.CancelFunc) {
+	doShutdown(sig, logger, app, db, rdb, cancel)
 }

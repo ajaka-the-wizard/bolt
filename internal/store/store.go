@@ -6,14 +6,23 @@ import (
 
 	"github.com/ajaka-the-wizard/bolt/internal/database"
 	"github.com/ajaka-the-wizard/bolt/internal/redis"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
+type redisClient interface {
+	SetIdemKey(ctx context.Context, key string) error
+	GetIdemKey(ctx context.Context, key string) (int, error)
+	AddToInvoiceQueue(ctx context.Context, id uuid.UUID) error
+	GetNextOnQueue(ctx context.Context, id string, stream string, group string) ([]goredis.XStream, error)
+}
+
 type Store struct {
-	r  *redis.Redis
+	r  redisClient
 	db *database.Repo
 }
 
-func InitStore(r *redis.Redis, db *database.Repo) *Store {
+
 	return &Store{r, db}
 }
 
