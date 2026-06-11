@@ -54,15 +54,15 @@ func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *datab
 	go func() {
 		<-sig
 		cancel()
+		logger.Info("Shutting down server...")
+		if err := app.Shutdown(); err != nil {
+			logger.Error("Error during shutdown", "error", err.Error())
+		}
 		logger.Info("Closing redis connection")
 		if err := rdb.CloseConn(); err != nil {
 			logger.Error("Error closing redis connection", "error", err.Error())
 		}
 		logger.Info("Closing database connection")
 		db.CloseConn()
-		logger.Info("Shutting down server...")
-		if err := app.Shutdown(); err != nil {
-			logger.Error("Error during shutdown", "error", err.Error())
-		}
 	}()
 }

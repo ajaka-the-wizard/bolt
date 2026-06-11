@@ -16,6 +16,9 @@ func (s *Store) FetchNextTask(ctx context.Context, id string, stream string, gro
 	for {
 		data, err = s.r.GetNextOnQueue(ctx, id, stream, group)
 		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
 			logger.Error("Failed to fetch next task", "error", err.Error())
 			select {
 			case <-ctx.Done():
