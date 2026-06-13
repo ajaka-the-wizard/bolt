@@ -3,6 +3,7 @@ package configs
 import (
 	"log/slog"
 
+	"github.com/ajaka-the-wizard/bolt/internal/domain"
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 )
@@ -16,7 +17,7 @@ type Env struct {
 	PRODUCTION     bool   `mapstructure:"PRODUCTION"`
 }
 
-func LoadEnv(logger *slog.Logger) *Env {
+func LoadEnvAndCompany(logger *slog.Logger) (*Env, *domain.CompanyInfo) {
 	v := viper.New()
 	v.AutomaticEnv()
 	v.SetConfigFile(".env")
@@ -27,7 +28,8 @@ func LoadEnv(logger *slog.Logger) *Env {
 	}
 
 	var env Env
-	if err := v.UnmarshalExact(&env); err != nil {
+	var company domain.CompanyInfo
+	if err := v.Unmarshal(&env); err != nil {
 		logger.Error("Failed to map env config", "error", err)
 		panic(err)
 	}
@@ -37,5 +39,17 @@ func LoadEnv(logger *slog.Logger) *Env {
 		panic(err)
 	}
 	logger.Info("Env loaded successfully")
-	return &env
+
+	if err := v.Unmarshal(&company); err != nil {
+		logger.Error("Failed to map company config", "error", err.Error())
+		panic(err)
+	}
+	if err := validate.Struct(&company); err != nil {
+		logger.Error("Missing company fields. ", "error", err.Error())
+		panic(err)
+	}
+
+	logger.Info("Company data loaded successfully")
+
+	return &env, &company
 }

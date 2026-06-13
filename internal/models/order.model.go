@@ -15,6 +15,7 @@ type Order struct {
 	Total           float64     `db:"total" json:"total"`
 	Discount        float64     `db:"discount" json:"discount"`
 	PaymentMethod   string      `db:"payment_method" json:"payment_method"`
+	Currency        string      `db:"currency" json:"currency"`
 	CreatedAt       time.Time   `db:"created_at" json:"created_at"`
 	UpdatedAt       time.Time   `db:"updated_at" json:"updated_at"`
 }

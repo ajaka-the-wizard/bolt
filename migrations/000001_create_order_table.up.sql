@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS orders (
     total            DECIMAL(12,2) NOT NULL DEFAULT 0,
     status           status_enum NOT NULL DEFAULT 'pending',
     payment_method   VARCHAR(50) NOT NULL,
+    currency         VARCHAR (3) NOT NULL,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -22,3 +22,7 @@ func (s *Store) SaveOrder(ctx context.Context, data *models.Order, key string) (
 	s.r.AddToInvoiceQueue(ctx, id)
 	return id, nil
 }
+
+func (s *Store) FetchOrder(ctx context.Context, id uuid.UUID) (*models.Order, error) {
+	return s.db.FetchOrder(ctx, id)
+}
