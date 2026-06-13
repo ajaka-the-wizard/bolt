@@ -1,6 +1,8 @@
 package workers
 
 import (
+	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/ajaka-the-wizard/bolt/internal/models"
@@ -31,6 +33,8 @@ const (
 )
 
 // Simple pdf file name generator, could be improved
-func generateOutputPath(o *models.Order) string {
-	return "order" + o.OrderNumber + time.Now().String()
+func generateOutputPath(outputDir string, o *models.Order) string {
+	timestamp := time.Now().Format("20060102-150405")
+	filename := fmt.Sprintf("order-%s-%s.pdf", o.OrderNumber, timestamp)
+	return filepath.Join(outputDir, filename)
 }
