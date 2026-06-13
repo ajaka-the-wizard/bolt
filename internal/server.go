@@ -22,7 +22,7 @@ func Listen() {
 	defer cancel()
 
 	logger := slog.Default()
-	env := configs.LoadEnv(logger)
+	env, company := configs.LoadEnvAndCompany(logger)
 
 	db := database.ConnectDB(ctx, logger, env.DATABASE_URL)
 	defer db.CloseConn()
@@ -30,7 +30,7 @@ func Listen() {
 	rdb := redis.InitRedis(ctx, env, logger)
 	store := store.InitStore(rdb, db)
 
-	workers.InitInvoiceWorkers(ctx, store, logger)
+	workers.InitInvoiceWorkers(ctx, store, logger, company)
 
 	app := fiber.New()
 

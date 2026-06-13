@@ -6,6 +6,7 @@ import (
 
 	"github.com/ajaka-the-wizard/bolt/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 func (r *Repo) SaveOrder(ctx context.Context, data *models.Order) (uuid.UUID, error) {
@@ -23,4 +24,25 @@ func (r *Repo) SaveOrder(ctx context.Context, data *models.Order) (uuid.UUID, er
 		return uuid.UUID{}, err
 	}
 	return id, nil
+}
+
+func (r *Repo) FetchOrder(ctx context.Context, id uuid.UUID) (*models.Order, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	query := `
+	SELECT * FROM orders
+	WHERE id = $1
+	`
+	rows, err := r.pool.Query(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+	order, err := pgx.CollectOneRow(rows, pgx.RowToStructByNameLax[models.Order])
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &order, nil
 }

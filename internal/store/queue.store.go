@@ -26,9 +26,7 @@ func (s *Store) FetchNextTask(ctx context.Context, id string, stream string, gro
 			case <-time.After(backoff):
 			}
 			backoff = backoff * 2
-			if backoff > maxBackoff {
-				backoff = maxBackoff
-			}
+			backoff = min(backoff, maxBackoff)
 			continue
 		}
 		break
