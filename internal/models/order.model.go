@@ -7,9 +7,9 @@ type Order struct {
 	OrderNumber     string      `db:"order_number" json:"order_number"`
 	CustomerEmail   string      `db:"customer_email" json:"customer_email"`
 	CustomerName    string      `db:"customer_name" json:"customer_name"`
-	ShippingAddress Address     `db:"address" json:"address"`
+	ShippingAddress Address     `db:"shipping_address" json:"shipping_address"`
 	Items           []OrderItem `db:"items" json:"items"`
-	Subtotal        float64     `db:"subtotal" json:"subtotal"`
+	Subtotal        float64     `db:"sub_total" json:"sub_total"`
 	ShippingCost    float64     `db:"shipping_cost" json:"shipping_cost"`
 	Tax             float64     `db:"tax" json:"tax"`
 	Total           float64     `db:"total" json:"total"`
@@ -18,6 +18,7 @@ type Order struct {
 	Currency        string      `db:"currency" json:"currency"`
 	CreatedAt       time.Time   `db:"created_at" json:"created_at"`
 	UpdatedAt       time.Time   `db:"updated_at" json:"updated_at"`
+	Status          string      `db:"status"`
 }
 
 type OrderItem struct {
