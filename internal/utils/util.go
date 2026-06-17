@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// GetLogger gets the request scopped logger from locals using the generic function GetLocal
 func GetLogger(c fiber.Ctx) *slog.Logger {
 	if logger, ok := GetLocal[*slog.Logger](c, "logger"); ok {
 		return logger
@@ -14,6 +15,7 @@ func GetLogger(c fiber.Ctx) *slog.Logger {
 	return slog.Default()
 }
 
+// GetLocal is a generic function that fetches anything from fiber request locals.
 func GetLocal[T any](c fiber.Ctx, key string) (T, bool) {
 	var zero T
 	val := c.Locals(key)
@@ -27,6 +29,7 @@ func GetLocal[T any](c fiber.Ctx, key string) (T, bool) {
 	return typed, true
 }
 
+// iszero checks if a field is set or still it's zero value
 func iszero(d any) bool {
 	if d == nil {
 		return true

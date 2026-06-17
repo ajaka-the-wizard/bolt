@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// Invoice generation Producer Handler, receives the data from the req object, and delegates storage and job queuing to store.
 func ProducerHandler(s *store.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		logger := utils.GetLogger(c)

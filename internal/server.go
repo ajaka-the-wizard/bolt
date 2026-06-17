@@ -17,6 +17,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// Listen co-ordinates all crucial operations, a goroutine for graceful shutdown and binds to a port
 func Listen() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -52,6 +53,7 @@ func Listen() {
 	}
 }
 
+// Shutdown is responsible for cleaning up resources
 func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *database.Repo, rdb *redis.Redis, cancel context.CancelFunc) {
 	go func() {
 		<-sig

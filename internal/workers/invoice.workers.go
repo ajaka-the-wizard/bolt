@@ -21,6 +21,7 @@ type invoiceWorkers struct {
 	store *store.Store
 }
 
+// GenerateInvoice initializes a logger and a background worker responsible for generating invoices
 func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *models.CompanyInfo, id string) {
 	logger := slog.Default().With(slog.String("group", domain.BoltRedisInvoiceConsumerGroup), slog.String("id", id))
 	go func() {
@@ -59,7 +60,7 @@ func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *models.Co
 						logger.Error(err.Error())
 						continue
 					}
-					outputPath := generateOutputPath(domain.BoltInvoiceOutPutPath, order)
+					outputPath := generateOutputPath(domain.BoltInvoiceOutputPath, order)
 					if err = GenerateInvoicePDF(order, company, outputPath); err != nil {
 						logger.Error("Something went wrong while generating invoice", "error", err, "order_id", orderId)
 					} else {
@@ -76,6 +77,7 @@ func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *models.Co
 	}()
 }
 
+// InitInvoiceWorkers initializes all the workers for invoice generation
 func InitInvoiceWorkers(ctx context.Context, store *store.Store, logger *slog.Logger, company *models.CompanyInfo) {
 	s := invoiceWorkers{
 		store: store,

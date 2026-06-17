@@ -16,6 +16,7 @@ type Env struct {
 	PRODUCTION     bool   `mapstructure:"PRODUCTION"`
 }
 
+// MustLoadEnv is responsible for loading and validating all environments variable used throughout the app. It will panic should any error occur during that process.
 func MustLoadEnv(logger *slog.Logger) *Env {
 	v := viper.New()
 	v.AutomaticEnv()

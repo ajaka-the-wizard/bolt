@@ -41,6 +41,7 @@ func generateOutputPath(outputDir string, o *models.Order) string {
 	return filepath.Join(outputDir, filename)
 }
 
+// A simple function for handling any potential redis streams ack errors. This is to reduce clutter at the original sites
 func handleAckError(err error, logger *slog.Logger, m redis.XMessage) {
 	if err != nil {
 		logger.Error("An error occurred while acknowledging a stream message", "messageId", m.ID, "error", err)

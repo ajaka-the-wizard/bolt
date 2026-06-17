@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// LoadCompany loads the company data from the database, returns it or any potential error.
 func (r *Repo) LoadCompany(ctx context.Context) (*models.CompanyInfo, error) {
 	query := `
 	SELECT * from company
