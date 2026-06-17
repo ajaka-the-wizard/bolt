@@ -1,7 +1,5 @@
 package domain
 
-import "path/filepath"
-
 const (
 	BoltRedisMaxRetries           = 5
 	BoltIdempotencyKey            = "bolt:idempotency:"
