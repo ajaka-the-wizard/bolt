@@ -3,6 +3,7 @@ package workers
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/ajaka-the-wizard/bolt/internal/domain"
 	"github.com/ajaka-the-wizard/bolt/internal/models"
 	"github.com/ajaka-the-wizard/bolt/internal/store"
+	"github.com/google/uuid"
 	"github.com/signintech/gopdf"
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
@@ -19,21 +21,46 @@ type invoiceWorkers struct {
 	store *store.Store
 }
 
-func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, id string) {
+func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *domain.CompanyInfo, id string) {
 	logger := slog.Default().With(slog.String("group", domain.BoltRedisInvoiceConsumerGroup), slog.String("id", id))
 	go func() {
-		t := time.NewTicker(time.Second * 2)
-		defer t.Stop()
-
-		for range t.C {
+		for {
 			data, err := i.store.FetchNextTask(ctx, id, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, logger)
-			if err == ctx.Err() {
-				logger.Error("Cancellation error")
-				break
+			if err != nil {
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					logger.Info("Worker shutting down due", "error", err)
+					return
+				}
+				logger.Error("Failed to fetch task, trying again", "error", err)
+				continue
 			}
 			logger.Info("Processing job", slog.Any("job", data))
-			// TODO implement actual work
-			time.Sleep(time.Minute)
+			for _, d := range data {
+				var orderId uuid.UUID
+				for _, m := range d.Messages {
+					if id, ok := m.Values["order_id"].(string); ok {
+						orderId, err = uuid.Parse(id)
+						if err != nil {
+							logger.Error("Received invalid id from redis, dropping", "error", err)
+							continue
+						}
+						logger.Info("OK", "id", orderId)
+						order, err := i.store.FetchOrder(ctx, orderId)
+						if err != nil {
+							logger.Error(err.Error())
+							continue
+						}
+						outputPath := generateOutputPath(domain.BoltInvoiceOutPutPath, order)
+						if err = GenerateInvoicePDF(order, company, outputPath); err != nil {
+							logger.Error("Something went wrong while generating invoice", "error", err, "order_id", orderId)
+						} else {
+							logger.Info("Finished generating invoice", "orderId", orderId)
+						}
+
+					}
+				}
+			}
+			time.Sleep(time.Second * 10)
 		}
 
 	}()
@@ -43,16 +70,16 @@ func InitInvoiceWorkers(ctx context.Context, store *store.Store, logger *slog.Lo
 	s := invoiceWorkers{
 		store: store,
 	}
-	s.GenerateInvoice(ctx, "worker1")
-	s.GenerateInvoice(ctx, "worker2")
-	s.GenerateInvoice(ctx, "worker3")
+	s.GenerateInvoice(ctx, company, "worker1")
+	s.GenerateInvoice(ctx, company, "worker2")
+	s.GenerateInvoice(ctx, company, "worker3")
 	logger.Info("Invoice generating workers initialized")
 }
 
 // GenerateInvoicePDF renders a PDF invoice for the given order and writes it
 // to outputPath (e.g. "invoice_ORD-001.pdf"). Fonts are embedded — no external
 // font files required.
-func GenerateInvoicePDF(order models.Order, company *domain.CompanyInfo, outputPath string) error {
+func GenerateInvoicePDF(order *models.Order, company *domain.CompanyInfo, outputPath string) error {
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
@@ -83,7 +110,7 @@ func GenerateInvoicePDF(order models.Order, company *domain.CompanyInfo, outputP
 
 // ─── Section renderers ────────────────────────────────────────────────────────
 
-func drawHeader(pdf *gopdf.GoPdf, order models.Order, company *domain.CompanyInfo, y float64) float64 {
+func drawHeader(pdf *gopdf.GoPdf, order *models.Order, company *domain.CompanyInfo, y float64) float64 {
 	// Left: company name
 	setFont(pdf, fontBold, 18)
 	put(pdf, mLeft, y, company.Name)
@@ -104,9 +131,8 @@ func drawHeader(pdf *gopdf.GoPdf, order models.Order, company *domain.CompanyInf
 
 	// Right: invoice meta rows
 	meta := [][2]string{
-		{"Invoice #:", order.OrderNumber},
-		{"Date:", order.CreatedAt.Format("Jan 02, 2006")},
-		{"Order ID:", order.ID},
+		{"Invoice #: ", order.OrderNumber},
+		{"Date: ", order.CreatedAt.Format("Jan 02, 2006")},
 	}
 	for _, row := range meta {
 		setFont(pdf, fontBold, 9)
@@ -122,7 +148,7 @@ func drawHeader(pdf *gopdf.GoPdf, order models.Order, company *domain.CompanyInf
 	return y
 }
 
-func drawAddressBlock(pdf *gopdf.GoPdf, order models.Order, y float64) float64 {
+func drawAddressBlock(pdf *gopdf.GoPdf, order *models.Order, y float64) float64 {
 	setFont(pdf, fontBold, 9)
 	put(pdf, mLeft, y, "BILL TO / SHIP TO")
 	y += 14
@@ -142,10 +168,18 @@ func drawAddressBlock(pdf *gopdf.GoPdf, order models.Order, y float64) float64 {
 		put(pdf, mLeft, y, l)
 		y += 13
 	}
+
+	y += 6
+	setFont(pdf, fontBold, 9)
+	put(pdf, mLeft, y, "Order ID: ")
+	setFont(pdf, fontRegular, 9)
+	put(pdf, mLeft+55, y, order.ID)
+	y += 13
+
 	return y
 }
 
-func drawItemsTable(pdf *gopdf.GoPdf, order models.Order, y float64) float64 {
+func drawItemsTable(pdf *gopdf.GoPdf, order *models.Order, y float64) float64 {
 	rowH := 18.0
 
 	// Header row — dark background, white text
@@ -181,7 +215,7 @@ func drawItemsTable(pdf *gopdf.GoPdf, order models.Order, y float64) float64 {
 	return y
 }
 
-func drawTotals(pdf *gopdf.GoPdf, order models.Order, y float64) float64 {
+func drawTotals(pdf *gopdf.GoPdf, order *models.Order, y float64) float64 {
 	labelX := rightX
 	valueX := 480.0
 	rowH := 16.0
@@ -218,7 +252,7 @@ func drawTotals(pdf *gopdf.GoPdf, order models.Order, y float64) float64 {
 	return y + bannerH
 }
 
-func drawPaymentSection(pdf *gopdf.GoPdf, order models.Order, y float64) {
+func drawPaymentSection(pdf *gopdf.GoPdf, order *models.Order, y float64) {
 	setFont(pdf, fontBold, 9)
 	put(pdf, mLeft, y, "PAYMENT METHOD")
 	setFont(pdf, fontRegular, 9)
@@ -263,7 +297,7 @@ func hline(pdf *gopdf.GoPdf, y, thickness float64) {
 }
 
 func money(currency string, amount float64) string {
-	return fmt.Sprintf("%s%.2f", currency, amount)
+	return fmt.Sprintf("%s %.2f", currency, amount)
 }
 
 func companyLines(company *domain.CompanyInfo) []string {

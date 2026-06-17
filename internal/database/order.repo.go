@@ -2,8 +2,10 @@ package database
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/ajaka-the-wizard/bolt/internal/domain"
 	"github.com/ajaka-the-wizard/bolt/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -41,6 +43,9 @@ func (r *Repo) FetchOrder(ctx context.Context, id uuid.UUID) (*models.Order, err
 	order, err := pgx.CollectOneRow(rows, pgx.RowToStructByNameLax[models.Order])
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrOrderNoExists
+		}
 		return nil, err
 	}
 

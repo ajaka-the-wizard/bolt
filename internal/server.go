@@ -22,6 +22,7 @@ func Listen() {
 	defer cancel()
 
 	logger := slog.Default()
+	configs.EnsureAllIsFine(logger)
 	env, company := configs.LoadEnvAndCompany(logger)
 
 	db := database.ConnectDB(ctx, logger, env.DATABASE_URL)

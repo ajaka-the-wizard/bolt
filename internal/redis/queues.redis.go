@@ -27,3 +27,7 @@ func (r *Redis) GetNextOnQueue(ctx context.Context, id string, stream string, gr
 	}
 	return data, nil
 }
+
+func (r *Redis) Ack(ctx context.Context, stream string, group string, ids ...string) error {
+	return r.rdb.XAck(ctx, stream, group, ids...).Err()
+}
