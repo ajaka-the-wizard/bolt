@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ajaka-the-wizard/bolt/internal/domain"
+	"github.com/ajaka-the-wizard/bolt/internal/errs"
 	"github.com/ajaka-the-wizard/bolt/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -44,7 +44,7 @@ func (r *Repo) FetchOrder(ctx context.Context, id uuid.UUID) (*models.Order, err
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domain.ErrOrderNoExists
+			return nil, errs.ErrOrderNoExists
 		}
 		return nil, err
 	}

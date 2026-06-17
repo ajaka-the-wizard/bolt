@@ -2,10 +2,12 @@ package workers
 
 import (
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"time"
 
 	"github.com/ajaka-the-wizard/bolt/internal/models"
+	"github.com/redis/go-redis/v9"
 )
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
@@ -37,4 +39,10 @@ func generateOutputPath(outputDir string, o *models.Order) string {
 	timestamp := time.Now().Format("20060102-150405")
 	filename := fmt.Sprintf("order-%s-%s.pdf", o.OrderNumber, timestamp)
 	return filepath.Join(outputDir, filename)
+}
+
+func handleAckError(err error, logger *slog.Logger, m redis.XMessage) {
+	if err != nil {
+		logger.Error("An error occurred while acknowledging a stream message", "messageId", m.ID, "error", err)
+	}
 }

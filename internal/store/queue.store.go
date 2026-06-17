@@ -33,3 +33,7 @@ func (s *Store) FetchNextTask(ctx context.Context, id string, stream string, gro
 	}
 	return data, nil
 }
+
+func (s *Store) Ack(ctx context.Context, stream string, group string, id ...string) error {
+	return s.r.Ack(ctx, stream, group, id...)
+}

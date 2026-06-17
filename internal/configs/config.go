@@ -10,7 +10,7 @@ import (
 func EnsureAllIsFine(logger *slog.Logger) {
 	err := os.MkdirAll(domain.BoltInvoiceOutPutPath, os.ModeDir.Perm())
 	if err != nil {
-		logger.Error("Couldnt ensure directories are created", "error", err)
+		logger.Error("Couldn't ensure directories are created", "error", err)
 		panic(err)
 	}
 	logger.Info("Invoice output directory is fine")

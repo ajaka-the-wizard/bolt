@@ -21,7 +21,7 @@ type invoiceWorkers struct {
 	store *store.Store
 }
 
-func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *domain.CompanyInfo, id string) {
+func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *models.CompanyInfo, id string) {
 	logger := slog.Default().With(slog.String("group", domain.BoltRedisInvoiceConsumerGroup), slog.String("id", id))
 	go func() {
 		for {
@@ -34,30 +34,40 @@ func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *domain.Co
 				logger.Error("Failed to fetch task, trying again", "error", err)
 				continue
 			}
-			logger.Info("Processing job", slog.Any("job", data))
+			logger.Info("Processing job", "job", data)
 			for _, d := range data {
 				var orderId uuid.UUID
 				for _, m := range d.Messages {
-					if id, ok := m.Values["order_id"].(string); ok {
-						orderId, err = uuid.Parse(id)
-						if err != nil {
-							logger.Error("Received invalid id from redis, dropping", "error", err)
-							continue
-						}
-						logger.Info("OK", "id", orderId)
-						order, err := i.store.FetchOrder(ctx, orderId)
-						if err != nil {
-							logger.Error(err.Error())
-							continue
-						}
-						outputPath := generateOutputPath(domain.BoltInvoiceOutPutPath, order)
-						if err = GenerateInvoicePDF(order, company, outputPath); err != nil {
-							logger.Error("Something went wrong while generating invoice", "error", err, "order_id", orderId)
-						} else {
-							logger.Info("Finished generating invoice", "orderId", orderId)
-						}
-
+					orderIdStr, ok := m.Values["order_id"].(string)
+					if !ok {
+						logger.Error("Missing or invalid order_id in message, dropping")
+						err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
+						handleAckError(err, logger, m)
+						continue
 					}
+					orderId, err = uuid.Parse(orderIdStr)
+					if err != nil {
+						logger.Error("Received invalid id from redis, dropping", "error", err)
+						err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
+						handleAckError(err, logger, m)
+
+						continue
+					}
+					logger.Info("Valid data received, now fetching complete details", "id", orderId)
+					order, err := i.store.FetchOrder(ctx, orderId)
+					if err != nil {
+						logger.Error(err.Error())
+						continue
+					}
+					outputPath := generateOutputPath(domain.BoltInvoiceOutPutPath, order)
+					if err = GenerateInvoicePDF(order, company, outputPath); err != nil {
+						logger.Error("Something went wrong while generating invoice", "error", err, "order_id", orderId)
+					} else {
+						logger.Info("Finished generating invoice", "orderId", orderId)
+						err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
+						handleAckError(err, logger, m)
+					}
+
 				}
 			}
 			time.Sleep(time.Second * 10)
@@ -66,7 +76,7 @@ func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *domain.Co
 	}()
 }
 
-func InitInvoiceWorkers(ctx context.Context, store *store.Store, logger *slog.Logger, company *domain.CompanyInfo) {
+func InitInvoiceWorkers(ctx context.Context, store *store.Store, logger *slog.Logger, company *models.CompanyInfo) {
 	s := invoiceWorkers{
 		store: store,
 	}
@@ -79,7 +89,7 @@ func InitInvoiceWorkers(ctx context.Context, store *store.Store, logger *slog.Lo
 // GenerateInvoicePDF renders a PDF invoice for the given order and writes it
 // to outputPath (e.g. "invoice_ORD-001.pdf"). Fonts are embedded — no external
 // font files required.
-func GenerateInvoicePDF(order *models.Order, company *domain.CompanyInfo, outputPath string) error {
+func GenerateInvoicePDF(order *models.Order, company *models.CompanyInfo, outputPath string) error {
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
@@ -110,7 +120,7 @@ func GenerateInvoicePDF(order *models.Order, company *domain.CompanyInfo, output
 
 // ─── Section renderers ────────────────────────────────────────────────────────
 
-func drawHeader(pdf *gopdf.GoPdf, order *models.Order, company *domain.CompanyInfo, y float64) float64 {
+func drawHeader(pdf *gopdf.GoPdf, order *models.Order, company *models.CompanyInfo, y float64) float64 {
 	// Left: company name
 	setFont(pdf, fontBold, 18)
 	put(pdf, mLeft, y, company.Name)
@@ -259,7 +269,7 @@ func drawPaymentSection(pdf *gopdf.GoPdf, order *models.Order, y float64) {
 	put(pdf, mLeft, y+14, order.PaymentMethod)
 }
 
-func drawFooter(pdf *gopdf.GoPdf, company *domain.CompanyInfo) {
+func drawFooter(pdf *gopdf.GoPdf, company *models.CompanyInfo) {
 	y := pageH - 50.0
 	hline(pdf, y, 0.5)
 	y += 10
@@ -300,7 +310,7 @@ func money(currency string, amount float64) string {
 	return fmt.Sprintf("%s %.2f", currency, amount)
 }
 
-func companyLines(company *domain.CompanyInfo) []string {
+func companyLines(company *models.CompanyInfo) []string {
 	lines := []string{company.AddressLine1}
 	if company.AddressLine2 != "" {
 		lines = append(lines, company.AddressLine2)

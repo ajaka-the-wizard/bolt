@@ -42,10 +42,22 @@ func InitRedis(ctx context.Context, env *configs.Env, logger *slog.Logger) *Redi
 		logger.Error("Failed to create stream with consumer groups", "error", err.Error())
 		panic(err)
 	}
+	// Ensure stream for invoice processing exists
+	ensureStream(ctx, rdb, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, logger)
 
-	logger.Info("Consumer stream created successfully")
+	// Ensure stream for webhook processing exists
+	ensureStream(ctx, rdb, domain.BoltRedisWebhookStreamKey, domain.BoltRedisWebhookConsumerGroup, logger)
+
+	logger.Info("All consumer stream created successfully")
 	return &Redis{
 		rdb,
+	}
+}
+
+func ensureStream(ctx context.Context, rdb *redis.Client, stream string, group string, logger *slog.Logger) {
+	if err := rdb.XGroupCreateMkStream(ctx, stream, group, "$").Err(); err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
+		logger.Error("Failed to create stream with consumer groups", "error", err.Error())
+		panic(err)
 	}
 }
 

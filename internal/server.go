@@ -23,14 +23,15 @@ func Listen() {
 
 	logger := slog.Default()
 	configs.EnsureAllIsFine(logger)
-	env, company := configs.LoadEnvAndCompany(logger)
+	env := configs.MustLoadEnv(logger)
 
 	db := database.ConnectDB(ctx, logger, env.DATABASE_URL)
 	defer db.CloseConn()
 
 	rdb := redis.InitRedis(ctx, env, logger)
-	store := store.InitStore(rdb, db)
+	company := configs.MustLoadCompany(db, logger, ctx)
 
+	store := store.InitStore(rdb, db)
 	workers.InitInvoiceWorkers(ctx, store, logger, company)
 
 	app := fiber.New()
