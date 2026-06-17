@@ -40,7 +40,7 @@ func Listen() {
 	// Graceful shutdown
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	Shutdown(sig, logger, app, db, rdb, cancel)
+	shutdown(sig, logger, app, db, rdb, cancel)
 
 	api := app.Group("/api/v1", middlewares.GenerateUniqueId(), middlewares.LoggerMiddleware(), middlewares.LatencyCalculations(), middlewares.AuthMiddleware(env))
 
@@ -54,7 +54,7 @@ func Listen() {
 }
 
 // Shutdown is responsible for cleaning up resources
-func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *database.Repo, rdb *redis.Redis, cancel context.CancelFunc) {
+func shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *database.Repo, rdb *redis.Redis, cancel context.CancelFunc) {
 	go func() {
 		<-sig
 		cancel()
