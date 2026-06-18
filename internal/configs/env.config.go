@@ -3,7 +3,6 @@ package configs
 import (
 	"log/slog"
 
-	"github.com/ajaka-the-wizard/bolt/internal/domain"
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 )
@@ -17,7 +16,8 @@ type Env struct {
 	PRODUCTION     bool   `mapstructure:"PRODUCTION"`
 }
 
-func LoadEnvAndCompany(logger *slog.Logger) (*Env, *domain.CompanyInfo) {
+// MustLoadEnv is responsible for loading and validating all environments variable used throughout the app. It will panic should any error occur during that process.
+func MustLoadEnv(logger *slog.Logger) *Env {
 	v := viper.New()
 	v.AutomaticEnv()
 	v.SetConfigFile(".env")
@@ -28,8 +28,7 @@ func LoadEnvAndCompany(logger *slog.Logger) (*Env, *domain.CompanyInfo) {
 	}
 
 	var env Env
-	var company domain.CompanyInfo
-	if err := v.Unmarshal(&env); err != nil {
+	if err := v.UnmarshalExact(&env); err != nil {
 		logger.Error("Failed to map env config", "error", err)
 		panic(err)
 	}
@@ -40,16 +39,5 @@ func LoadEnvAndCompany(logger *slog.Logger) (*Env, *domain.CompanyInfo) {
 	}
 	logger.Info("Env loaded successfully")
 
-	if err := v.Unmarshal(&company); err != nil {
-		logger.Error("Failed to map company config", "error", err.Error())
-		panic(err)
-	}
-	if err := validate.Struct(&company); err != nil {
-		logger.Error("Missing company fields. ", "error", err.Error())
-		panic(err)
-	}
-
-	logger.Info("Company data loaded successfully")
-
-	return &env, &company
+	return &env
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// GenerateUniqueId generates an id for every requests, this aids observability and debugging
 func GenerateUniqueId() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		id := uuid.New().String()
@@ -17,6 +18,7 @@ func GenerateUniqueId() fiber.Handler {
 	}
 }
 
+// This service uses a request scoped logger for easy request tracking. LoggerMiddleware is responsible for initializing it and injecting into the current request scope
 func LoggerMiddleware() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		id := c.Locals("id").(string)
@@ -28,6 +30,7 @@ func LoggerMiddleware() fiber.Handler {
 	}
 }
 
+// LatencyCalculations is a small middleware to track the time taken for a request to complete. It aids observability
 func LatencyCalculations() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		start := time.Now()

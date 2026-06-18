@@ -5,12 +5,13 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ajaka-the-wizard/bolt/internal/domain"
+	"github.com/ajaka-the-wizard/bolt/internal/errs"
 	"github.com/ajaka-the-wizard/bolt/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
+// Insert Orders into the database
 func (r *Repo) SaveOrder(ctx context.Context, data *models.Order) (uuid.UUID, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -28,6 +29,7 @@ func (r *Repo) SaveOrder(ctx context.Context, data *models.Order) (uuid.UUID, er
 	return id, nil
 }
 
+// Retrives order from the database
 func (r *Repo) FetchOrder(ctx context.Context, id uuid.UUID) (*models.Order, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -44,7 +46,7 @@ func (r *Repo) FetchOrder(ctx context.Context, id uuid.UUID) (*models.Order, err
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domain.ErrOrderNoExists
+			return nil, errs.ErrOrderNoExists
 		}
 		return nil, err
 	}

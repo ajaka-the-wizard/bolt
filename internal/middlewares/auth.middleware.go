@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// AuthMiddleware is responsible for ensuring the request is from a trusted and authorized source, it rejects all req with invalid auth data and those without the necessary details required for authorization
 func AuthMiddleware(env *configs.Env) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		logger := utils.GetLogger(c)
@@ -26,6 +27,7 @@ func AuthMiddleware(env *configs.Env) fiber.Handler {
 	}
 }
 
+// IdempotencyMiddleware is a middleware for detecting duplicate requests. All unique request are allowed to pass through while others are rejected
 func IdempotencyMiddleware(s *store.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		logger := utils.GetLogger(c)

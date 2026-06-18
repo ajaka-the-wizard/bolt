@@ -17,20 +17,22 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// Listen co-ordinates all crucial operations, a goroutine for graceful shutdown and binds to a port
 func Listen() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	logger := slog.Default()
 	configs.EnsureAllIsFine(logger)
-	env, company := configs.LoadEnvAndCompany(logger)
+	env := configs.MustLoadEnv(logger)
 
 	db := database.ConnectDB(ctx, logger, env.DATABASE_URL)
 	defer db.CloseConn()
 
 	rdb := redis.InitRedis(ctx, env, logger)
-	store := store.InitStore(rdb, db)
+	company := configs.MustLoadCompany(db, logger, ctx)
 
+	store := store.InitStore(rdb, db)
 	workers.InitInvoiceWorkers(ctx, store, logger, company)
 
 	app := fiber.New()
@@ -38,7 +40,7 @@ func Listen() {
 	// Graceful shutdown
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	Shutdown(sig, logger, app, db, rdb, cancel)
+	shutdown(sig, logger, app, db, rdb, cancel)
 
 	api := app.Group("/api/v1", middlewares.GenerateUniqueId(), middlewares.LoggerMiddleware(), middlewares.LatencyCalculations(), middlewares.AuthMiddleware(env))
 
@@ -51,7 +53,8 @@ func Listen() {
 	}
 }
 
-func Shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *database.Repo, rdb *redis.Redis, cancel context.CancelFunc) {
+// Shutdown is responsible for cleaning up resources
+func shutdown(sig chan os.Signal, logger *slog.Logger, app *fiber.App, db *database.Repo, rdb *redis.Redis, cancel context.CancelFunc) {
 	go func() {
 		<-sig
 		cancel()

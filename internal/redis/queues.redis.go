@@ -8,10 +8,13 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// AddToInvoiceQueue adds a new message to the invoice generating stream
 func (r *Redis) AddToInvoiceQueue(ctx context.Context, id uuid.UUID) error {
 	arg := redis.XAddArgs{Stream: domain.BoltRedisInvoiceStreamKey, ID: "*", Values: map[string]any{"order_id": id.String(), "max_retries": domain.BoltRedisMaxRetries, "no_of_retries": 0}, IdempotentID: id.String()}
 	return r.rdb.XAdd(ctx, &arg).Err()
 }
+
+// GetNextOnQueue retrives the next data from redis streams
 func (r *Redis) GetNextOnQueue(ctx context.Context, id string, stream string, group string) ([]redis.XStream, error) {
 	a := redis.XReadGroupArgs{
 		Group:    group,
@@ -28,6 +31,7 @@ func (r *Redis) GetNextOnQueue(ctx context.Context, id string, stream string, gr
 	return data, nil
 }
 
+// This acknowledges the successful completion of a job
 func (r *Redis) Ack(ctx context.Context, stream string, group string, ids ...string) error {
 	return r.rdb.XAck(ctx, stream, group, ids...).Err()
 }

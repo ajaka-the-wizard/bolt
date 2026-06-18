@@ -12,6 +12,7 @@ type Repo struct {
 	pool *pgxpool.Pool
 }
 
+// ConnectDB connects to postgresql database, it is a crucial operation so it panics should anything go wrong.
 func ConnectDB(ctx context.Context, logger *slog.Logger, databaseUrl string) *Repo {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -37,6 +38,7 @@ func ConnectDB(ctx context.Context, logger *slog.Logger, databaseUrl string) *Re
 	}
 }
 
+// CloseConn is responsible for closing all connections. it calls the inner Close method for the operation
 func (r *Repo) CloseConn() {
 	if r.pool != nil {
 		r.pool.Close()

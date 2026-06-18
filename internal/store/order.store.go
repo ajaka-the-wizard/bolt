@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// SaveOrder co-ordinates saving the order to the database, storing the idempotency key and adding a new invoice generation job to stream
 func (s *Store) SaveOrder(ctx context.Context, data *models.Order, key string) (uuid.UUID, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -23,6 +24,7 @@ func (s *Store) SaveOrder(ctx context.Context, data *models.Order, key string) (
 	return id, nil
 }
 
+// FetchOrder fetches the order from database
 func (s *Store) FetchOrder(ctx context.Context, id uuid.UUID) (*models.Order, error) {
 	return s.db.FetchOrder(ctx, id)
 }

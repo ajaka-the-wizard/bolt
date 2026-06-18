@@ -8,6 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// FetchNextTask is responsible for fetching the next message from the stream, it continues to retry until a message is received
 func (s *Store) FetchNextTask(ctx context.Context, id string, stream string, group string, logger *slog.Logger) ([]redis.XStream, error) {
 	var data []redis.XStream
 	var err error
@@ -32,4 +33,9 @@ func (s *Store) FetchNextTask(ctx context.Context, id string, stream string, gro
 		break
 	}
 	return data, nil
+}
+
+// Ack acknowledge a certain stream message has been processed
+func (s *Store) Ack(ctx context.Context, stream string, group string, id ...string) error {
+	return s.r.Ack(ctx, stream, group, id...)
 }

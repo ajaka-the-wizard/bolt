@@ -15,6 +15,7 @@ type Redis struct {
 	rdb *redis.Client
 }
 
+// InitRedis is responsible for connecting to redis, it's a crucial operation so it panics should anything go wrong
 func InitRedis(ctx context.Context, env *configs.Env, logger *slog.Logger) *Redis {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -42,13 +43,27 @@ func InitRedis(ctx context.Context, env *configs.Env, logger *slog.Logger) *Redi
 		logger.Error("Failed to create stream with consumer groups", "error", err.Error())
 		panic(err)
 	}
+	// Ensure stream for invoice processing exists
+	ensureStream(ctx, rdb, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, logger)
 
-	logger.Info("Consumer stream created successfully")
+	// Ensure stream for webhook processing exists
+	ensureStream(ctx, rdb, domain.BoltRedisWebhookStreamKey, domain.BoltRedisWebhookConsumerGroup, logger)
+
+	logger.Info("All consumer stream created successfully")
 	return &Redis{
 		rdb,
 	}
 }
 
+// This is a small utility that ensures a redis stream exists for the consumer group, it's a crucial operation that panics on error
+func ensureStream(ctx context.Context, rdb *redis.Client, stream string, group string, logger *slog.Logger) {
+	if err := rdb.XGroupCreateMkStream(ctx, stream, group, "$").Err(); err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
+		logger.Error("Failed to create stream with consumer groups", "error", err.Error())
+		panic(err)
+	}
+}
+
+// CloseConn closes the connection to redis using the inner Close method
 func (r *Redis) CloseConn() error {
 	if r.rdb != nil {
 		return r.rdb.Close()
@@ -56,6 +71,7 @@ func (r *Redis) CloseConn() error {
 	return nil
 }
 
+// SetIdemKey adds idempotency key to redis
 func (r *Redis) SetIdemKey(ctx context.Context, key string) error {
 	iKey := domain.BoltIdempotencyKey + key
 	exp := time.Hour * 24
@@ -63,6 +79,7 @@ func (r *Redis) SetIdemKey(ctx context.Context, key string) error {
 	return err
 }
 
+// GetIdemKey retrives idempotency key from redis
 func (r *Redis) GetIdemKey(ctx context.Context, key string) (int, error) {
 	iKey := domain.BoltIdempotencyKey + key
 	val, err := r.rdb.Exists(ctx, iKey).Result()
