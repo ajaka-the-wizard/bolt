@@ -13,6 +13,8 @@ import (
 func (r *Repo) LoadCompany(ctx context.Context) (*models.CompanyInfo, error) {
 	query := `
 	SELECT * from company
+	ORDER BY created_at DESC
+	LIMIT 1
 	`
 
 	rows, err := r.pool.Query(ctx, query)

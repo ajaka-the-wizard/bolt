@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ajaka-the-wizard/bolt/internal/domain"
+	"github.com/ajaka-the-wizard/bolt/internal/errs"
 	"github.com/ajaka-the-wizard/bolt/internal/models"
 	"github.com/ajaka-the-wizard/bolt/internal/store"
 	"github.com/google/uuid"
@@ -55,9 +56,14 @@ func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *models.Co
 						continue
 					}
 					logger.Info("Valid data received, now fetching complete details", "id", orderId)
-					order, err := i.store.FetchOrder(ctx, orderId)
+					order, err := i.store.FetchOrder(ctx, orderId, models.Pending)
 					if err != nil {
-						logger.Error(err.Error())
+						logger.Error("Failed to fetch order", "error", err, "order_id", orderId)
+						if errors.Is(err, errs.ErrOrderNoExists) {
+							logger.Warn("Order does not exists, dropping message", "order_id", orderId)
+							err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
+							handleAckError(err, logger, m)
+						}
 						continue
 					}
 					outputPath := generateOutputPath(domain.BoltInvoiceOutputPath, order)
@@ -66,6 +72,12 @@ func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *models.Co
 					} else {
 						logger.Info("Finished generating invoice", "orderId", orderId)
 						err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
+						if err = i.store.AddToWebhookQueue(ctx, orderId); err != nil {
+							// Basic for now, must be improved
+							logger.Error("Could not add order to webhook queue", "orderId", orderId)
+						} else {
+							logger.Info("Order added to webhook queue", "orderId", orderId)
+						}
 						handleAckError(err, logger, m)
 					}
 

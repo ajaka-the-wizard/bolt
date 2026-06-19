@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-// GetLogger gets the request scopped logger from locals using the generic function GetLocal
+// GetLogger gets the request scoped logger from locals using the generic function GetLocal
 func GetLogger(c fiber.Ctx) *slog.Logger {
 	if logger, ok := GetLocal[*slog.Logger](c, "logger"); ok {
 		return logger
