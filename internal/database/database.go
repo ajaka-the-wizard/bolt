@@ -38,7 +38,7 @@ func ConnectDB(ctx context.Context, logger *slog.Logger, databaseUrl string) *Re
 	}
 }
 
-// CloseConn is responsible for closing all connections. it calls the inner Close method for the operation
+// CloseConn is responsible for closing all connections. It calls the inner Close method for the operation
 func (r *Repo) CloseConn() {
 	if r.pool != nil {
 		r.pool.Close()

@@ -8,7 +8,7 @@ import (
 	"github.com/ajaka-the-wizard/bolt/internal/redis"
 )
 
-// This is the co-ordinator between redis and database
+// Store is the co-ordinator between redis and database
 type Store struct {
 	r  *redis.Redis
 	db *database.Repo
@@ -26,7 +26,7 @@ func (s *Store) SetIdempotencyKey(ctx context.Context, key string) error {
 	return err
 }
 
-// CheckKeyExistence checks if a key has been seen or not. it returns a boolean depending
+// CheckKeyExistence checks if a key has been seen or not. it returns true if a key has been seen, false otherwise
 func (s *Store) CheckKeyExistence(ctx context.Context, key string) bool {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()

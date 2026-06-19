@@ -39,10 +39,6 @@ func InitRedis(ctx context.Context, env *configs.Env, logger *slog.Logger) *Redi
 	}
 	logger.Info("Redis cache connected successfully")
 
-	if err := rdb.XGroupCreateMkStream(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, "$").Err(); err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
-		logger.Error("Failed to create stream with consumer groups", "error", err.Error())
-		panic(err)
-	}
 	// Ensure stream for invoice processing exists
 	ensureStream(ctx, rdb, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, logger)
 

@@ -2,6 +2,15 @@ package models
 
 import "time"
 
+type Status string
+
+const (
+	Pending   Status = "pending"
+	Completed Status = "completed"
+	Failed    Status = "failed"
+	Started   Status = "started"
+)
+
 type Order struct {
 	ID              string      `db:"id" json:"id"`
 	OrderNumber     string      `db:"order_number" json:"order_number"`
@@ -18,7 +27,7 @@ type Order struct {
 	Currency        string      `db:"currency" json:"currency"`
 	CreatedAt       time.Time   `db:"created_at" json:"created_at"`
 	UpdatedAt       time.Time   `db:"updated_at" json:"updated_at"`
-	Status          string      `db:"status"`
+	Status          Status      `db:"status"`
 }
 
 type OrderItem struct {

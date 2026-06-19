@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -38,4 +39,12 @@ func (s *Store) FetchNextTask(ctx context.Context, id string, stream string, gro
 // Ack acknowledge a certain stream message has been processed
 func (s *Store) Ack(ctx context.Context, stream string, group string, id ...string) error {
 	return s.r.Ack(ctx, stream, group, id...)
+}
+
+// Adds new message to webhook queue
+func (s *Store) AddToWebhookQueue(ctx context.Context, id uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	return s.r.AddToWebhookQueue(ctx, id)
 }

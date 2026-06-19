@@ -8,13 +8,29 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// AddToInvoiceQueue adds a new message to the invoice generating stream
-func (r *Redis) AddToInvoiceQueue(ctx context.Context, id uuid.UUID) error {
-	arg := redis.XAddArgs{Stream: domain.BoltRedisInvoiceStreamKey, ID: "*", Values: map[string]any{"order_id": id.String(), "max_retries": domain.BoltRedisMaxRetries, "no_of_retries": 0}, IdempotentID: id.String()}
+func (r *Redis) addToQueue(ctx context.Context, id uuid.UUID, stream string) error {
+	values := map[string]any{"order_id": id.String(), "max_retries": domain.BoltRedisMaxRetries, "no_of_retries": 0}
+	arg := redis.XAddArgs{
+		Stream:       stream,
+		ID:           "*",
+		Values:       values,
+		IdempotentID: id.String(),
+	}
 	return r.rdb.XAdd(ctx, &arg).Err()
 }
 
-// GetNextOnQueue retrives the next data from redis streams
+// AddToInvoiceQueue adds a new message to the invoice generating stream
+func (r *Redis) AddToInvoiceQueue(ctx context.Context, id uuid.UUID) error {
+
+	return r.addToQueue(ctx, id, domain.BoltRedisInvoiceStreamKey)
+}
+
+// AddToWebhookQueue adds a new message to webhook delivery queue
+func (r *Redis) AddToWebhookQueue(ctx context.Context, id uuid.UUID) error {
+	return r.addToQueue(ctx, id, domain.BoltRedisWebhookStreamKey)
+}
+
+// GetNextOnQueue retrieves the next data from redis streams
 func (r *Redis) GetNextOnQueue(ctx context.Context, id string, stream string, group string) ([]redis.XStream, error) {
 	a := redis.XReadGroupArgs{
 		Group:    group,
