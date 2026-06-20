@@ -3,3 +3,4 @@ DROP INDEX IF EXISTS idx_orders_created_at;
 
 DROP TABLE IF EXISTS orders;
 DROP TYPE IF EXISTS status_enum;
+DROP TYPE IF EXISTS stage_enum;

@@ -26,7 +26,7 @@ func (s *Store) SetIdempotencyKey(ctx context.Context, key string) error {
 	return err
 }
 
-// CheckKeyExistence checks if a key has been seen or not. it returns true if a key has been seen, false otherwise
+// CheckKeyExistence checks if a key has been seen or not. It returns true if a key has been seen, false otherwise
 func (s *Store) CheckKeyExistence(ctx context.Context, key string) bool {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()

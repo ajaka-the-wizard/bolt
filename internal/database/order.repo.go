@@ -30,17 +30,15 @@ func (r *Repo) SaveOrder(ctx context.Context, data *models.Order) (uuid.UUID, er
 }
 
 // Retrives order from the database
-func (r *Repo) FetchOrder(ctx context.Context, id uuid.UUID, status models.Status) (*models.Order, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+func (r *Repo) FetchOrder(ctx context.Context, id uuid.UUID, status models.Status, stage models.Stage) (*models.Order, error) {
 
 	query := `
 	UPDATE orders
-	SET status = 'started'
+	SET status = 'started', stage = $3
 	WHERE id = $1 AND status = $2
 	RETURNING id, order_number, customer_name, customer_email, shipping_address, items, sub_total, shipping_cost, tax, discount, total, payment_method, currency, status, created_at, updated_at
 	`
-	rows, err := r.pool.Query(ctx, query, id, status)
+	rows, err := r.pool.Query(ctx, query, id, status, stage)
 	if err != nil {
 		return nil, err
 	}
@@ -54,4 +52,20 @@ func (r *Repo) FetchOrder(ctx context.Context, id uuid.UUID, status models.Statu
 	}
 
 	return &order, nil
+}
+
+func (r *Repo) SetFailed(ctx context.Context, orderId uuid.UUID) error {
+	query := `
+	UPDATE orders
+	SET status = 'failed'
+	WHERE id = $1
+	`
+	tag, err := r.pool.Exec(ctx, query, orderId)
+	if tag.RowsAffected() == 0 {
+		return errs.ErrOrderNoExists
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }
