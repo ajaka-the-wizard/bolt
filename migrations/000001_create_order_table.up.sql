@@ -1,4 +1,5 @@
 CREATE TYPE status_enum AS ENUM ('pending','completed','failed','started');
+CREATE TYPE stage_enum AS ENUM ('pending','invoice','webhook','email');
 
 CREATE TABLE IF NOT EXISTS orders (
     id               UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -15,6 +16,7 @@ CREATE TABLE IF NOT EXISTS orders (
     status           status_enum NOT NULL DEFAULT 'pending',
     payment_method   VARCHAR(50) NOT NULL,
     currency         VARCHAR (3) NOT NULL,
+    stage            stage_enum NOT NULL DEFAULT 'pending',
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

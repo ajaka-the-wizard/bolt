@@ -25,6 +25,15 @@ func (s *Store) SaveOrder(ctx context.Context, data *models.Order, key string) (
 }
 
 // FetchOrder fetches the order from database
-func (s *Store) FetchOrder(ctx context.Context, id uuid.UUID, status models.Status) (*models.Order, error) {
-	return s.db.FetchOrder(ctx, id, status)
+func (s *Store) FetchOrder(ctx context.Context, id uuid.UUID, status models.Status, stage models.Stage) (*models.Order, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	return s.db.FetchOrder(ctx, id, status, stage)
+}
+
+func (s *Store) SetFailed(ctx context.Context, orderId uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	return s.db.SetFailed(ctx, orderId)
 }

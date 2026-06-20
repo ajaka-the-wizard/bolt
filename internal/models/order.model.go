@@ -11,6 +11,14 @@ const (
 	Started   Status = "started"
 )
 
+type Stage string
+
+const (
+	Invoice Stage = "invoice"
+	Webhhok Stage = "webhhok"
+	Email   Stage = "email"
+)
+
 type Order struct {
 	ID              string      `db:"id" json:"id"`
 	OrderNumber     string      `db:"order_number" json:"order_number"`
@@ -25,9 +33,10 @@ type Order struct {
 	Discount        float64     `db:"discount" json:"discount"`
 	PaymentMethod   string      `db:"payment_method" json:"payment_method"`
 	Currency        string      `db:"currency" json:"currency"`
+	Status          Status      `db:"status" json:"status"`
+	Stage           Stage       `db:"stage" json:"stage"`
 	CreatedAt       time.Time   `db:"created_at" json:"created_at"`
 	UpdatedAt       time.Time   `db:"updated_at" json:"updated_at"`
-	Status          Status      `db:"status"`
 }
 
 type OrderItem struct {

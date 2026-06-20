@@ -9,10 +9,8 @@ import (
 	"time"
 
 	"github.com/ajaka-the-wizard/bolt/internal/domain"
-	"github.com/ajaka-the-wizard/bolt/internal/errs"
 	"github.com/ajaka-the-wizard/bolt/internal/models"
 	"github.com/ajaka-the-wizard/bolt/internal/store"
-	"github.com/google/uuid"
 	"github.com/signintech/gopdf"
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
@@ -38,46 +36,42 @@ func (i *invoiceWorkers) GenerateInvoice(ctx context.Context, company *models.Co
 			}
 			logger.Info("Processing job", "job", data)
 			for _, d := range data {
-				var orderId uuid.UUID
 				for _, m := range d.Messages {
-					orderIdStr, ok := m.Values["order_id"].(string)
+					orderId, maxRetries, noOfRetries, ok := parseRedisValue(m.Values)
 					if !ok {
-						logger.Error("Missing or invalid order_id in message, dropping")
+						logger.Error("Received invalid redis values,dropping", "values", m.Values)
 						err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
 						handleAckError(err, logger, m)
 						continue
 					}
-					orderId, err = uuid.Parse(orderIdStr)
-					if err != nil {
-						logger.Error("Received invalid id from redis, dropping", "error", err)
-						err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
-						handleAckError(err, logger, m)
-
+					if noOfRetries >= maxRetries {
+						handleRetriesError(ctx, logger, orderId, i.store)
 						continue
 					}
 					logger.Info("Valid data received, now fetching complete details", "id", orderId)
-					order, err := i.store.FetchOrder(ctx, orderId, models.Pending)
+					order, err := i.store.FetchOrder(ctx, orderId, models.Pending, models.Invoice)
 					if err != nil {
-						logger.Error("Failed to fetch order", "error", err, "order_id", orderId)
-						if errors.Is(err, errs.ErrOrderNoExists) {
-							logger.Warn("Order does not exists, dropping message", "order_id", orderId)
-							err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
-							handleAckError(err, logger, m)
-						}
+						handleFetchError(ctx, err, logger, orderId, i.store, m)
 						continue
 					}
-					outputPath := generateOutputPath(domain.BoltInvoiceOutputPath, order)
+					outputPath, ok := tryGetPath(domain.BoltInvoiceOutputPath, order)
+					if !ok {
+						logger.Warn("Duplicate invoice processing detected, will ackowledge ", "orderId", orderId, "file", outputPath)
+						err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
+						handleAckError(err, logger, m)
+						continue
+					}
 					if err = GenerateInvoicePDF(order, company, outputPath); err != nil {
 						logger.Error("Something went wrong while generating invoice", "error", err, "order_id", orderId)
+						continue
+					}
+					logger.Info("Finished generating invoice", "orderId", orderId)
+					if err = i.store.AddToWebhookQueue(ctx, orderId); err != nil {
+						// Basic for now, must be improved
+						logger.Error("Could not add order to webhook queue", "orderId", orderId)
 					} else {
-						logger.Info("Finished generating invoice", "orderId", orderId)
+						logger.Info("Order added to webhook queue", "orderId", orderId)
 						err = i.store.Ack(ctx, domain.BoltRedisInvoiceStreamKey, domain.BoltRedisInvoiceConsumerGroup, m.ID)
-						if err = i.store.AddToWebhookQueue(ctx, orderId); err != nil {
-							// Basic for now, must be improved
-							logger.Error("Could not add order to webhook queue", "orderId", orderId)
-						} else {
-							logger.Info("Order added to webhook queue", "orderId", orderId)
-						}
 						handleAckError(err, logger, m)
 					}
 
